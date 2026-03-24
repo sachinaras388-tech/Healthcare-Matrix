@@ -1,21 +1,20 @@
 const express = require("express");
 const multer = require("multer");
-const Record = require("../Models/record");
+const Record = require("../models/Record");
 const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// File storage
+// File upload
 const storage = multer.diskStorage({
   destination: "uploads/",
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   }
 });
-
 const upload = multer({ storage });
 
-// Upload Record
+// Upload record
 router.post("/upload", protect, upload.single("file"), async (req, res) => {
   const record = await Record.create({
     userId: req.user.id,
@@ -28,21 +27,33 @@ router.post("/upload", protect, upload.single("file"), async (req, res) => {
   res.json(record);
 });
 
-// Get Records
+// Get records
 router.get("/", protect, async (req, res) => {
-  const records = await Record.find({ userId: req.user.id });
+  let records;
+
+  if (req.user.role === "doctor") {
+    records = await Record.find();
+  } else {
+    records = await Record.find({ userId: req.user.id });
+  }
+
   res.json(records);
 });
 
-// Search / Filter
+// Search & filter
 router.get("/search", protect, async (req, res) => {
-  const { category } = req.query;
+  const { category, title } = req.query;
 
-  const records = await Record.find({
-    userId: req.user.id,
-    category
-  });
+  let query = {};
 
+  if (req.user.role === "patient") {
+    query.userId = req.user.id;
+  }
+
+  if (category) query.category = category;
+  if (title) query.title = { $regex: title, $options: "i" };
+
+  const records = await Record.find(query);
   res.json(records);
 });
 

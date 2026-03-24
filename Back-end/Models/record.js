@@ -6,7 +6,10 @@ const recordSchema = new mongoose.Schema({
     ref: "User"
   },
   title: String,
-  category: { type: String, enum: ["report", "prescription"] },
+  category: {
+    type: String,
+    enum: ["report", "prescription"]
+  },
   file: String,
   description: String
 }, { timestamps: true });
